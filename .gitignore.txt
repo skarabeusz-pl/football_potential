@@ -1,0 +1,16 @@
+# Ignore virtual environment
+venv/
+
+# Ignore Python bytecode files
+*.pyc
+__pycache__/
+
+# Ignore local development settings
+.env
+.env.local
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore IDE and editor-specific files
+.vscode/
