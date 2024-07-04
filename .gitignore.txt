@@ -1,6 +1,12 @@
 # Ignore virtual environment
 venv/
 
+# Ignore media files directory
+/media/
+
+# Ignore static files directory
+/static/
+
 # Ignore Python bytecode files
 *.pyc
 __pycache__/
