@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from .forms import UploadImageForm
-from PIL import Image
+from PIL import Image, ImageEnhance
 import pytesseract
 import cv2
 import numpy as np
@@ -11,20 +11,20 @@ pytesseract.pytesseract.tesseract_cmd = r'B:\program files\Tesseract-OCR\tessera
 # Format: (left, upper, right, lower)
 ROIS = {
     'player_name': (170, 350, 420, 400),
-    'goals': (1720, 285, 1770, 330),
-    'assists': (1720, 330, 1770, 365),
-    'shots': (1720, 365, 1770, 405),
-    'shot_accuracy': (1720, 405, 1770, 445),
-    'passes': (1720, 445, 1770, 485),
-    'pass_accuracy': (1720, 480, 1775, 525),
-    'dribbles': (1720, 525, 1770, 565),
-    'driblles_success_rate': (1720, 565, 1770, 605),
-    'tackles': (1720, 605, 1770, 645),
-    'tackle_success_rate': (1720, 645, 1770, 685),
-    'offsides': (1720, 685, 1770, 725),
-    'fouls_committed': (1720, 725, 1770, 765),
-    'possession_won': (1720, 765, 1770, 805),
-    'possesion_lost': (1720, 800, 1770, 840),
+    'goals': (1700, 285, 1770, 330),
+    'assists': (1700, 325, 1770, 365),
+    'shots': (1700, 365, 1770, 405),
+    'shot_accuracy': (1700, 405, 1770, 445),
+    'passes': (1700, 440, 1770, 485),
+    'pass_accuracy': (1700, 480, 1797, 525),
+    'dribbles': (1700, 520, 1770, 565),
+    'driblles_success_rate': (1700, 560, 1770, 605),
+    'tackles': (1700, 600, 1770, 640),
+    'tackle_success_rate': (1700, 640, 1770, 685),
+    'offsides': (1700, 680, 1770, 725),
+    'fouls_committed': (1700, 720, 1770, 765),
+    'possession_won': (1700, 760, 1770, 805),
+    'possesion_lost': (1700, 795, 1770, 840),
     # Add more ROIs as needed
 }
 
@@ -35,8 +35,7 @@ def say_hello(request):
 def index(request):
     return render(request, 'index.html') 
 
-
-
+# processing image to be black and white + enhanced
 def preprocess_image(image):
     # Convert image to grayscale
     gray = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
@@ -55,10 +54,15 @@ def upload_image(request):
             image = form.cleaned_data['image']
             img = Image.open(image)
 
+            standard_size = (1920, 1080)
+            if img.size != standard_size:
+                img = img.resize(standard_size, Image.ANTIALIAS)
+
             for property, coordinates in ROIS.items():
                 region = img.crop(coordinates)
                 processed_region = preprocess_image(region)
-                text = pytesseract.image_to_string(processed_region, config='--psm 6')
+                custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789'
+                text = pytesseract.image_to_string(processed_region, config=custom_config)
                 extracted_data[property] = text.strip()
     else:
         form = UploadImageForm()
