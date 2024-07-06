@@ -1,30 +1,36 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from .forms import UploadImageForm
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageDraw, ImageEnhance
 import pytesseract
-import cv2
-import numpy as np
+import io
+import base64
+
+# Desired dimensions
+TARGET_WIDTH = 1920
+TARGET_HEIGHT = 1080
 
 pytesseract.pytesseract.tesseract_cmd = r'B:\program files\Tesseract-OCR\tesseract.exe'
 
 # Format: (left, upper, right, lower)
 ROIS = {
     'player_name': (170, 350, 420, 400),
-    'goals': (1700, 285, 1770, 330),
-    'assists': (1700, 325, 1770, 365),
-    'shots': (1700, 365, 1770, 405),
-    'shot_accuracy': (1700, 405, 1770, 445),
-    'passes': (1700, 440, 1770, 485),
-    'pass_accuracy': (1700, 480, 1797, 525),
-    'dribbles': (1700, 520, 1770, 565),
-    'driblles_success_rate': (1700, 560, 1770, 605),
-    'tackles': (1700, 600, 1770, 640),
-    'tackle_success_rate': (1700, 640, 1770, 685),
-    'offsides': (1700, 680, 1770, 725),
-    'fouls_committed': (1700, 720, 1770, 765),
-    'possession_won': (1700, 760, 1770, 805),
-    'possesion_lost': (1700, 795, 1770, 840),
+    #'goals': (1700, 290, 1765, 325),
+    #'assists': (1693, 325, 1765, 365),
+    'goals': (490, 360, 560, 400),
+    'assists': (570, 360, 640, 400),
+    'shots': (1700, 365, 1765, 405),
+    'shot_accuracy': (1700, 405, 1765, 440),
+    'passes': (1700, 440, 1765, 480),
+    'pass_accuracy': (1700, 480, 1765, 520),
+    'dribbles': (1700, 520, 1765, 560),
+    'driblles_success_rate': (1700, 560, 1765, 600),
+    'tackles': (1700, 600, 1765, 640),
+    'tackle_success_rate': (1700, 640, 1765, 680),
+    'offsides': (1700, 680, 1765, 720),
+    'fouls_committed': (1700, 720, 1765, 755),
+    'possession_won': (1700, 755, 1765, 795),
+    'possesion_lost': (1700, 795, 1765, 840),
     # Add more ROIs as needed
 }
 
@@ -35,15 +41,37 @@ def say_hello(request):
 def index(request):
     return render(request, 'index.html') 
 
-# processing image to be black and white + enhanced
-def preprocess_image(image):
-    # Convert image to grayscale
-    gray = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
-    # Apply Gaussian Blur to reduce noise
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    # Apply thresholding to get a binary image
-    _, binary = cv2.threshold(blurred, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    return Image.fromarray(binary)
+def resize_image(img):
+    width, height = img.size
+    if width != TARGET_WIDTH or height != TARGET_HEIGHT:
+        img = img.resize((TARGET_WIDTH, TARGET_HEIGHT))
+    return img
+
+def preprocess_image(img):
+    # # old version of making image black and white
+    # Convert to grayscale
+    # img = img.convert('L')
+
+    # Apply a threshold to make it black and white
+    # threshold = 128
+    # img = img.point(lambda p: p > threshold and 255)
+
+    # image -> black & white
+    enhancer = ImageEnhance.Color(img)
+    img = enhancer.enhance(0.0)
+
+    # Sharpening
+    enhancer = ImageEnhance.Sharpness(img)
+    img = enhancer.enhance(2.0)
+    # Lower brightness
+    enhancer = ImageEnhance.Brightness(img)
+    img = enhancer.enhance(0.1)  # Adjust this value as needed
+
+    # Boost contrast
+    enhancer = ImageEnhance.Contrast(img)
+    img = enhancer.enhance(0.5)  # Adjust this value as needed
+
+    return img
 
 def upload_image(request):
     extracted_data = {}
@@ -54,22 +82,24 @@ def upload_image(request):
             image = form.cleaned_data['image']
             img = Image.open(image)
 
-            standard_size = (1920, 1080)
-            if img.size != standard_size:
-                img = img.resize(standard_size, Image.ANTIALIAS)
+            # Resize the image
+            img = resize_image(img)
+
+            # Preprocess the image
+            img = preprocess_image(img)
 
             for property, coordinates in ROIS.items():
                 region = img.crop(coordinates)
-                processed_region = preprocess_image(region)
                 custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789'
-                text = pytesseract.image_to_string(processed_region, config=custom_config)
+                text = pytesseract.image_to_string(region, config=custom_config)  # Try with config to improve accuracy
                 extracted_data[property] = text.strip()
+
     else:
         form = UploadImageForm()
 
     return render(request, 'upload.html', {'form': form, 'extracted_data': extracted_data})
 
-# # older version
+# # display image and the value
 # def upload_image(request):
 #     extracted_data = {}
 
@@ -79,10 +109,30 @@ def upload_image(request):
 #             image = form.cleaned_data['image']
 #             img = Image.open(image)
 
+#             # Resize the image
+#             img = resize_image(img)
+
+#             # Preprocess the image
+#             img = preprocess_image(img)
+
+#             draw = ImageDraw.Draw(img)  # Create a drawing object
+
 #             for property, coordinates in ROIS.items():
 #                 region = img.crop(coordinates)
-#                 text = pytesseract.image_to_string(region)
-#                 extracted_data[property] = text.strip()
+#                 custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789'
+#                 text = pytesseract.image_to_string(region, config=custom_config)  # Try with config to improve accuracy
+#                 extracted_data[property] = {
+#                     'text': text.strip(),
+#                     'region': region,  # Save the PIL region object
+#                 }
+                
+#                 # Draw a rectangle around the ROI for visualization
+#                 draw.rectangle(coordinates, outline='red', width=3)
+
+#                 buffered = io.BytesIO()
+#                 region.save(buffered, format="JPEG")
+#                 encoded_img = base64.b64encode(buffered.getvalue()).decode("utf-8")
+#                 extracted_data[property]['encoded_img'] = f"data:image/jpeg;base64,{encoded_img}"
 
 #     else:
 #         form = UploadImageForm()

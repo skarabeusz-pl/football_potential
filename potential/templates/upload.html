@@ -1,3 +1,29 @@
+{% comment %} used for presenting data extraction {% endcomment %}
+{% comment %} <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Image</title>
+</head>
+<body>
+    <h2>Upload Image</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form }}
+        <button type="submit">Upload</button>
+    </form>
+
+    {% if extracted_data %}
+        <h3>Extracted Data:</h3>
+        {% for property, data in extracted_data.items %}
+            <h4>{{ property }}</h4>
+            <p>Extracted Text: {{ data.text }}</p>
+            <img src="{{ data.encoded_img }}" alt="{{ property }} Region" width="300">
+        {% endfor %}
+    {% endif %}
+</body>
+</html> {% endcomment %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,8 +31,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Image</title>
     {% load static %}
-    <!-- Include any necessary CSS files or stylesheets -->
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% comment %} <!-- Include any necessary CSS files or stylesheets -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}"> {% endcomment %}
 </head>
 <body>
     <div class="container">
@@ -24,6 +50,10 @@
                 {% endfor %}
             </ul>
         {% endif %}
+        <br>
+        <form action="{% url 'index' %}">
+            <input type="submit" value="back to home" />
+        </form>
     </div>
 </body>
 </html>
