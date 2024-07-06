@@ -47,6 +47,15 @@ def resize_image(img):
         img = img.resize((TARGET_WIDTH, TARGET_HEIGHT))
     return img
 
+def process_extracted_data(extracted_data):
+    processed_data = {}
+    for key, value in extracted_data.items():
+        try:
+            processed_data[key] = int(value)
+        except ValueError:
+            processed_data[key] = 0
+    return processed_data
+
 def preprocess_image(img):
     # # old version of making image black and white
     # Convert to grayscale
