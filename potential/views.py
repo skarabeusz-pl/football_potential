@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from .forms import UploadImageForm
+from .models import Player
 from PIL import Image, ImageDraw, ImageEnhance
 import pytesseract
 import io
@@ -57,14 +58,6 @@ def process_extracted_data(extracted_data):
     return processed_data
 
 def preprocess_image(img):
-    # # old version of making image black and white
-    # Convert to grayscale
-    # img = img.convert('L')
-
-    # Apply a threshold to make it black and white
-    # threshold = 128
-    # img = img.point(lambda p: p > threshold and 255)
-
     # image -> black & white
     enhancer = ImageEnhance.Color(img)
     img = enhancer.enhance(0.0)
@@ -80,10 +73,20 @@ def preprocess_image(img):
     enhancer = ImageEnhance.Contrast(img)
     img = enhancer.enhance(0.5)  # Adjust this value as needed
 
+    # # old version of making image black and white
+    # Convert to grayscale
+    # img = img.convert('L')
+
+    # Apply a threshold to make it black and white
+    # threshold = 128
+    # img = img.point(lambda p: p > threshold and 255)
+
     return img
 
 def upload_image(request):
     extracted_data = {}
+    processed_data = {}
+    potential = None
 
     if request.method == 'POST':
         form = UploadImageForm(request.POST, request.FILES)
@@ -103,10 +106,47 @@ def upload_image(request):
                 text = pytesseract.image_to_string(region, config=custom_config)  # Try with config to improve accuracy
                 extracted_data[property] = text.strip()
 
+            # Debugging: Print extracted data
+            # print("Extracted Data:", extracted_data)
+
+            # Process the extracted data
+            processed_data = process_extracted_data(extracted_data)
+
+            # Debugging: Print processed data
+            # print("Processed Data:", processed_data)
+
+            # Save data to the database
+            player = Player(
+                name=processed_data.get('player_name', 'Unknown'),
+                goals=processed_data.get('goals', 0),
+                assists=processed_data.get('assists', 0),
+                shots=processed_data.get('shots', 0),
+                shot_accuracy=processed_data.get('shot_accuracy', 0),
+                passes=processed_data.get('passes', 0),
+                pass_accuracy=processed_data.get('pass_accuracy', 0),
+                dribbles=processed_data.get('dribbles', 0),
+                dribbles_success_rate=processed_data.get('dribbles_success_rate', 0),
+                tackles=processed_data.get('tackles', 0),
+                tackle_success_rate=processed_data.get('tackle_success_rate', 0),
+                offsides=processed_data.get('offsides', 0),
+                fouls_committed=processed_data.get('fouls_committed', 0),
+                possession_won=processed_data.get('possession_won', 0),
+                possession_lost=processed_data.get('possession_lost', 0),
+            )
+            player.save()
+
+            # Calculate potential
+            potential = player.calculate_potential()
     else:
         form = UploadImageForm()
 
-    return render(request, 'upload.html', {'form': form, 'extracted_data': extracted_data})
+
+    return render(request, 'upload.html', {
+        'form': form,
+        'extracted_data': extracted_data,
+        'processed_data': processed_data,
+        'potential': potential
+    })
 
 # # display image and the value
 # def upload_image(request):

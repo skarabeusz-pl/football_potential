@@ -42,15 +42,16 @@
             {{ form.as_p }}
             <button type="submit">Upload</button>
         </form>
-        {% if extracted_data %}
-            <h2>Extracted Data:</h2>
-            <ul>
-                {% for key, value in extracted_data.items %}
-                    <li><strong>{{ key }}:</strong> {{ value }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
         <br>
+        <h2>Processed Data:</h2>
+        <ul>
+            {% for key, value in processed_data.items %}
+                <li><strong>{{ key }}:</strong> {{ value }}</li>
+            {% endfor %}
+        </ul>
+        <br>
+        <h2>Potential:</h2>
+        <p>{{ potential }}</p>
         <form action="{% url 'index' %}">
             <input type="submit" value="back to home" />
         </form>
