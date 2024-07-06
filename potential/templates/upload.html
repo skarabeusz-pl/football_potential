@@ -12,7 +12,7 @@
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit">Upload</button>
+            <button type="submit" name="upload">Upload</button>
             <button type="submit" name="clear">Clear Data</button>
         </form>
 
