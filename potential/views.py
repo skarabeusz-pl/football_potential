@@ -1,8 +1,9 @@
 from django.shortcuts import render
+from django.db.models import Avg, Sum
 from django.http import HttpResponse
 from .forms import UploadImageForm
 from .models import Player
-from PIL import Image, ImageDraw, ImageEnhance
+from PIL import Image, ImageEnhance
 import pytesseract
 import io
 import base64
@@ -65,6 +66,7 @@ def preprocess_image(img):
     # Sharpening
     enhancer = ImageEnhance.Sharpness(img)
     img = enhancer.enhance(2.0)
+
     # Lower brightness
     enhancer = ImageEnhance.Brightness(img)
     img = enhancer.enhance(0.1)  # Adjust this value as needed
@@ -87,6 +89,7 @@ def upload_image(request):
     extracted_data = {}
     processed_data = {}
     potential = None
+    average_data = None
 
     if request.method == 'POST':
         form = UploadImageForm(request.POST, request.FILES)
@@ -137,6 +140,60 @@ def upload_image(request):
 
             # Calculate potential
             potential = player.calculate_potential()
+
+            # Calculate average data from all players
+            # Process the extracted data
+            processed_data = process_extracted_data(extracted_data)
+
+            # Save data to the database
+            player = Player(
+                name=processed_data.get('player_name', 'Unknown'),
+                goals=processed_data.get('goals', 0),
+                assists=processed_data.get('assists', 0),
+                shots=processed_data.get('shots', 0),
+                shot_accuracy=processed_data.get('shot_accuracy', 0),
+                passes=processed_data.get('passes', 0),
+                pass_accuracy=processed_data.get('pass_accuracy', 0),
+                dribbles=processed_data.get('dribbles', 0),
+                dribbles_success_rate=processed_data.get('dribbles_success_rate', 0),
+                tackles=processed_data.get('tackles', 0),
+                tackle_success_rate=processed_data.get('tackle_success_rate', 0),
+                offsides=processed_data.get('offsides', 0),
+                fouls_committed=processed_data.get('fouls_committed', 0),
+                possession_won=processed_data.get('possession_won', 0),
+                possession_lost=processed_data.get('possession_lost', 0),
+            )
+            player.save()
+
+            # Calculate potential
+            potential = player.calculate_potential()
+
+            # Aggregate data
+            total_count = Player.objects.count()
+            sum_data = Player.objects.aggregate(
+                Sum('goals'), Sum('assists'), Sum('shots'), Sum('passes'),
+                Sum('dribbles'), Sum('tackles'), Sum('offsides'), Sum('fouls_committed'),
+                Sum('possession_won'), Sum('possession_lost')
+            )
+            avg_data = Player.objects.aggregate(
+                Avg('shot_accuracy'), Avg('pass_accuracy'), Avg('dribbles_success_rate')
+            )
+            average_data = {
+                'goals': sum_data['goals__sum'],
+                'assists': sum_data['assists__sum'],
+                'shots': sum_data['shots__sum'],
+                'passes': sum_data['passes__sum'],
+                'dribbles': sum_data['dribbles__sum'],
+                'tackles': sum_data['tackles__sum'],
+                'offsides': sum_data['offsides__sum'],
+                'fouls_committed': sum_data['fouls_committed__sum'],
+                'possession_won': sum_data['possession_won__sum'],
+                'possession_lost': sum_data['possession_lost__sum'],
+                'shot_accuracy': avg_data['shot_accuracy__avg'],
+                'pass_accuracy': avg_data['pass_accuracy__avg'],
+                'dribbles_success_rate': avg_data['dribbles_success_rate__avg'],
+                'total_images': total_count
+            }
     else:
         form = UploadImageForm()
 
@@ -145,45 +202,7 @@ def upload_image(request):
         'form': form,
         'extracted_data': extracted_data,
         'processed_data': processed_data,
-        'potential': potential
+        'potential': potential,
+        'average_data': average_data
     })
 
-# # display image and the value
-# def upload_image(request):
-#     extracted_data = {}
-
-#     if request.method == 'POST':
-#         form = UploadImageForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             image = form.cleaned_data['image']
-#             img = Image.open(image)
-
-#             # Resize the image
-#             img = resize_image(img)
-
-#             # Preprocess the image
-#             img = preprocess_image(img)
-
-#             draw = ImageDraw.Draw(img)  # Create a drawing object
-
-#             for property, coordinates in ROIS.items():
-#                 region = img.crop(coordinates)
-#                 custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789'
-#                 text = pytesseract.image_to_string(region, config=custom_config)  # Try with config to improve accuracy
-#                 extracted_data[property] = {
-#                     'text': text.strip(),
-#                     'region': region,  # Save the PIL region object
-#                 }
-                
-#                 # Draw a rectangle around the ROI for visualization
-#                 draw.rectangle(coordinates, outline='red', width=3)
-
-#                 buffered = io.BytesIO()
-#                 region.save(buffered, format="JPEG")
-#                 encoded_img = base64.b64encode(buffered.getvalue()).decode("utf-8")
-#                 extracted_data[property]['encoded_img'] = f"data:image/jpeg;base64,{encoded_img}"
-
-#     else:
-#         form = UploadImageForm()
-
-#     return render(request, 'upload.html', {'form': form, 'extracted_data': extracted_data})

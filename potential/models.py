@@ -5,26 +5,22 @@ class Player(models.Model):
     goals = models.IntegerField(default=0)
     assists = models.IntegerField(default=0)
     shots = models.IntegerField(default=0)
-    shot_accuracy = models.IntegerField(default=0)
+    shot_accuracy = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     passes = models.IntegerField(default=0)
-    pass_accuracy = models.IntegerField(default=0)
+    pass_accuracy = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     dribbles = models.IntegerField(default=0)
-    dribbles_success_rate = models.IntegerField(default=0)
+    dribbles_success_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     tackles = models.IntegerField(default=0)
-    tackle_success_rate = models.IntegerField(default=0)
+    tackle_success_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     offsides = models.IntegerField(default=0)
     fouls_committed = models.IntegerField(default=0)
     possession_won = models.IntegerField(default=0)
     possession_lost = models.IntegerField(default=0)
 
     def calculate_potential(self):
-        # Example potential calculation logic
-        total_contributions = (
-            self.goals + self.assists + self.shots + self.shot_accuracy +
-            self.passes + self.pass_accuracy + self.dribbles + self.dribbles_success_rate +
-            self.tackles + self.tackle_success_rate + self.offsides + self.fouls_committed +
-            self.possession_won + self.possession_lost
-        )
-        # Example: Normalize to a scale of 0 to 10
-        potential = min(max(total_contributions / 100, 0), 10)
-        return potential
+        # Implement your logic to calculate potential based on the stored data
+        # This is a placeholder; you should define your own algorithm here
+        return 0  # Replace with your calculation logic
+
+    def __str__(self):
+        return self.name

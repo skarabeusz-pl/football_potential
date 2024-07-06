@@ -1,29 +1,3 @@
-{% comment %} used for presenting data extraction {% endcomment %}
-{% comment %} <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Upload Image</title>
-</head>
-<body>
-    <h2>Upload Image</h2>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form }}
-        <button type="submit">Upload</button>
-    </form>
-
-    {% if extracted_data %}
-        <h3>Extracted Data:</h3>
-        {% for property, data in extracted_data.items %}
-            <h4>{{ property }}</h4>
-            <p>Extracted Text: {{ data.text }}</p>
-            <img src="{{ data.encoded_img }}" alt="{{ property }} Region" width="300">
-        {% endfor %}
-    {% endif %}
-</body>
-</html> {% endcomment %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Image</title>
     {% load static %}
-    {% comment %} <!-- Include any necessary CSS files or stylesheets -->
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}"> {% endcomment %}
 </head>
 <body>
     <div class="container">
@@ -41,20 +13,36 @@
             {% csrf_token %}
             {{ form.as_p }}
             <button type="submit">Upload</button>
+            <button type="submit" name="clear">Clear Data</button>
         </form>
+
         <br>
-        <h2>Processed Data:</h2>
-        <ul>
-            {% for key, value in processed_data.items %}
-                <li><strong>{{ key }}:</strong> {{ value }}</li>
-            {% endfor %}
-        </ul>
+
+        {% if processed_data %}
+            <h2>Processed Data:</h2>
+            <ul>
+                {% for key, value in processed_data.items %}
+                    <li><strong>{{ key }}:</strong> {{ value }}</li>
+                {% endfor %}
+            </ul>
+
+            <br>
+
+            {% if potential is not None %}
+                <h2>Potential: {{ potential }}</h2>
+            {% endif %}
+        {% endif %}
+
         <br>
-        <h2>Potential:</h2>
-        <p>{{ potential }}</p>
-        <form action="{% url 'index' %}">
-            <input type="submit" value="back to home" />
-        </form>
+
+        {% if average_data %}
+            <h2>Average Data from All Images:</h2>
+            <ul>
+                {% for key, value in average_data.items %}
+                    <li><strong>{{ key }}:</strong> {{ value|floatformat:"2" }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
     </div>
 </body>
 </html>
