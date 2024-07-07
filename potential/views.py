@@ -1,7 +1,7 @@
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Avg, Sum
 from django.http import HttpResponse
-from .forms import UploadImageForm
+from .forms import UploadImageForm, PlayerSelectForm
 from .models import Player
 from PIL import Image, ImageEnhance
 import pytesseract
@@ -40,8 +40,13 @@ ROIS = {
 def say_hello(request):
     return HttpResponse('Hello World!')
 
+
 def index(request):
-    return render(request, 'index.html') 
+    players = Player.objects.all()
+    return render(request, 'index.html', {'players': players})
+# # old index
+# def index(request):
+#     return render(request, 'index.html') 
 
 def resize_image(img):
     width, height = img.size
@@ -85,13 +90,17 @@ def preprocess_image(img):
 
     return img
 
-def upload_image(request):
+def upload_image(request, player_id):
+    # player = Player.objects.get(id=player_id)
     extracted_data = {}
     processed_data = {}
     potential = None
     aggregate_data = None
 
     form = UploadImageForm(request.POST, request.FILES)
+    player = get_object_or_404(Player, id=player_id)
+
+
 
     if request.method == 'POST':
         if 'upload' in request.POST:
@@ -121,41 +130,53 @@ def upload_image(request):
                 # Debugging: Print processed data
                 # print("Processed Data:", processed_data)
 
-                # Save data to the database
-                player = Player(
-                    name=processed_data.get('player_name', 'Unknown'),
-                    goals=processed_data.get('goals', 0),
-                    assists=processed_data.get('assists', 0),
-                    shots=processed_data.get('shots', 0),
-                    shot_accuracy=processed_data.get('shot_accuracy', 0),
-                    passes=processed_data.get('passes', 0),
-                    pass_accuracy=processed_data.get('pass_accuracy', 0),
-                    dribbles=processed_data.get('dribbles', 0),
-                    dribbles_success_rate=processed_data.get('dribbles_success_rate', 0),
-                    tackles=processed_data.get('tackles', 0),
-                    tackle_success_rate=processed_data.get('tackle_success_rate', 0),
-                    offsides=processed_data.get('offsides', 0),
-                    fouls_committed=processed_data.get('fouls_committed', 0),
-                    possession_won=processed_data.get('possession_won', 0),
-                    possession_lost=processed_data.get('possession_lost', 0),
-                )
+                # Update data for the player in the database
+                player.goals += processed_data.get('goals', 0)
+                player.assists += processed_data.get('assists', 0)
+                player.shots += processed_data.get('shots', 0)
+                player.passes += processed_data.get('passes', 0)
+                player.dribbles += processed_data.get('dribbles', 0)
+                player.tackles += processed_data.get('tackles', 0)
+                player.offsides += processed_data.get('offsides', 0)
+                player.fouls_committed += processed_data.get('fouls_committed', 0)
+                player.possession_won += processed_data.get('possession_won', 0)
+                player.possession_lost += processed_data.get('possession_lost', 0)
+
+                player.shot_accuracy = (player.shot_accuracy + processed_data.get('shot_accuracy', 0)) / 2
+                player.pass_accuracy = (player.pass_accuracy + processed_data.get('pass_accuracy', 0)) / 2
+                player.dribbles_success_rate = (player.dribbles_success_rate + processed_data.get('dribbles_success_rate', 0)) / 2
+                player.tackle_success_rate = (player.tackle_success_rate + processed_data.get('tackle_success_rate', 0)) / 2
+
                 player.save()
 
                 # Calculate potential
                 potential = player.calculate_potential()
 
         elif 'clear' in request.POST:
-            Player.objects.all().delete()
-            return redirect('upload_image') # Redirect to clear the POST data
+            player.goals = 0
+            player.assists = 0
+            player.shots = 0
+            player.shot_accuracy = 0
+            player.passes = 0
+            player.pass_accuracy = 0
+            player.dribbles = 0
+            player.dribbles_success_rate = 0
+            player.tackles = 0
+            player.tackle_success_rate = 0
+            player.offsides = 0
+            player.fouls_committed = 0
+            player.possession_won = 0
+            player.possession_lost = 0
+            player.save()
 
         # Aggregate data
-        total_count = Player.objects.count()
-        sum_data = Player.objects.aggregate(
+        total_count = Player.objects.filter(id=player_id).count()
+        sum_data = Player.objects.filter(id=player_id).aggregate(
             Sum('goals'), Sum('assists'), Sum('shots'), Sum('passes'),
             Sum('dribbles'), Sum('tackles'), Sum('offsides'), Sum('fouls_committed'),
             Sum('possession_won'), Sum('possession_lost')
         )
-        avg_data = Player.objects.aggregate(
+        avg_data = Player.objects.filter(id=player_id).aggregate(
             Avg('shot_accuracy'), Avg('pass_accuracy'), Avg('dribbles_success_rate'), Avg('tackle_success_rate')
         )
         aggregate_data = {
@@ -172,8 +193,10 @@ def upload_image(request):
             'shot_accuracy': avg_data['shot_accuracy__avg'],
             'pass_accuracy': avg_data['pass_accuracy__avg'],
             'dribbles_success_rate': avg_data['dribbles_success_rate__avg'],
-            'tackle_success_rate' : avg_data['tackle_success_rate__avg']
+            'tackle_success_rate': avg_data['tackle_success_rate__avg'],
+            'total_count': total_count
         }
+
     else:
         form = UploadImageForm()
 
@@ -182,6 +205,7 @@ def upload_image(request):
         'extracted_data': extracted_data,
         'processed_data': processed_data,
         'potential': potential,
-        'average_data': aggregate_data
+        'aggregate_data': aggregate_data,
+        'player': player
     })
 

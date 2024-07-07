@@ -7,6 +7,17 @@
 <body>
     <h1>Welcome to My Django App</h1>
     <p>This is the home page.</p>
-    <a href="{% url 'upload_image' %}">Upload Image</a>
+
+    <h2>Select Player</h2>
+    <form method="get" action="">
+        <label for="player">Choose a player:</label>
+        <select id="player" name="player_id" onchange="this.form.action='{% url 'upload_image' player_id=0 %}'.replace('0', this.value); this.form.submit();">
+            <option value="" disabled selected>Select a player</option>
+            {% for player in players %}
+                <option value="{{ player.id }}">{{ player.name }}</option>
+            {% endfor %}
+        </select>
+        <noscript><button type="submit">Upload Image for Selected Player</button></noscript>
+    </form>
 </body>
 </html>

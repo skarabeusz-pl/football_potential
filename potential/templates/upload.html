@@ -2,47 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Image</title>
-    {% load static %}
 </head>
 <body>
-    <div class="container">
-        <h1>Upload Image</h1>
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" name="upload">Upload</button>
-            <button type="submit" name="clear">Clear Data</button>
-        </form>
+    <h1>Upload Image for {{ player.name }}</h1>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" name="upload">Upload</button>
+        <button type="submit" name="clear">Clear Data</button>
+    </form>
 
-        <br>
+    {% if processed_data %}
+        <h2>Processed Data</h2>
+        <ul>
+            {% for key, value in processed_data.items %}
+                <li>{{ key }}: {{ value }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 
-        {% if processed_data %}
-            <h2>Processed Data:</h2>
-            <ul>
-                {% for key, value in processed_data.items %}
-                    <li><strong>{{ key }}:</strong> {{ value }}</li>
-                {% endfor %}
-            </ul>
+    {% if potential %}
+        <h2>Player Potential</h2>
+        <p>{{ potential }}</p>
+    {% endif %}
 
-            <br>
-
-            {% if potential is not None %}
-                <h2>Potential: {{ potential }}</h2>
-            {% endif %}
-        {% endif %}
-
-        <br>
-
-        {% if average_data %}
-            <h2>Average Data from All Images:</h2>
-            <ul>
-                {% for key, value in average_data.items %}
-                    <li><strong>{{ key }}:</strong> {{ value|floatformat:"2" }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    </div>
+    {% if aggregate_data %}
+        <h2>Aggregate Data</h2>
+        <ul>
+            <li>Goals: {{ aggregate_data.goals }}</li>
+            <li>Assists: {{ aggregate_data.assists }}</li>
+            <li>Shots: {{ aggregate_data.shots }}</li>
+            <li>Passes: {{ aggregate_data.passes }}</li>
+            <li>Dribbles: {{ aggregate_data.dribbles }}</li>
+            <li>Tackles: {{ aggregate_data.tackles }}</li>
+            <li>Offsides: {{ aggregate_data.offsides }}</li>
+            <li>Fouls Committed: {{ aggregate_data.fouls_committed }}</li>
+            <li>Possession Won: {{ aggregate_data.possession_won }}</li>
+            <li>Possession Lost: {{ aggregate_data.possession_lost }}</li>
+            <li>Shot Accuracy: {{ aggregate_data.shot_accuracy }}</li>
+            <li>Pass Accuracy: {{ aggregate_data.pass_accuracy }}</li>
+            <li>Dribbles Success Rate: {{ aggregate_data.dribbles_success_rate }}</li>
+            <li>Tackle Success Rate: {{ aggregate_data.tackle_success_rate }}</li>
+            <li>Total Images: {{ total_count }}</li>
+        </ul>
+    {% endif %}
 </body>
 </html>
