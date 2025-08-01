@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Potential</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style> /* tu formatowanie strony */
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        h1, h2 {
+            color: #0f0; /* NEON */
+        }
+        label, p {
+            color: #fff;
+        }
+        select, button {
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        button#upload_button {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #fff; 
+        }
+        button#see_button {
+            border-color: #00f; 
+        }
+        noscript p {
+            color: #f00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Know Your FOOTBALL POTENTIAL</h1>
+        <p class="text-center">This is the home page.</p>
+
+        <h2 class="text-center">Select Player</h2>
+        <form method="get" action="" class="text-center">
+            <div class="form-group mb-2">
+                <label for="player" class="mr-2">Choose a player:</label>
+                <select id="player" name="player_id" class="form-control mx-auto" style="max-width: 300px;" onchange="
+                    const uploadButton = document.getElementById('upload_button');
+                    const seeButton = document.getElementById('see_button');
+                    const playerId = this.value;
+
+                    // przyciski aktualizowane dynamicznie
+                    uploadButton.formAction = '{% url 'upload_image' player_id=0 %}'.replace('0', playerId);
+                    seeButton.formAction = '{% url 'show_potential' player_id=0 %}'.replace('0', playerId);
+                ">
+                    <option value="" disabled selected>Select a player</option>
+                    {% for player in players %}
+                        <option value="{{ player.id }}">{{ player.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group mb-2">
+                <button type="submit" id="upload_button" class="btn btn-success mr-2">upload data</button>
+                <button type="submit" id="see_button" class="btn btn-primary">see data</button>
+            </div>
+            <noscript>
+                <p class="text-danger">Please enable JavaScript to use these buttons.</p>
+            </noscript>
+        </form>
+    </div>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

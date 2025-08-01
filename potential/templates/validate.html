@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validate Data</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        h1 {
+            color: #0f0;
+        }
+        label, p {
+            color: #fff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #222; 
+            color: #fff; 
+        }
+        th, td {
+            border: 1px solid #0f0;
+            padding: 8px;
+        }
+        th {
+            background-color: #333;
+            text-align: left;
+        }
+        img {
+            max-width: 100px;
+            max-height: 100px;
+        }
+        input {
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        button {
+            color: #fff; 
+            border: none;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        button.save-btn {
+            background-color: #28a745; /* Bootstrap success color */
+            border-color: #28a745; /* Bootstrap success border color */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Validate Extracted Data</h1>
+        <form method="POST">
+            {% csrf_token %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Extracted Value</th>
+                        <th>ROI Image</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, data in validation_data.items %}
+                        <tr>
+                            <td>{{ key }}</td>
+                            <td>
+                                <!-- do edycji danych z obrazka -->
+                                <input type="text" name="{{ key }}" value="{{ data.value }}">
+                            </td>
+                            <td>
+                                <!-- obrazki na podstawie ROI -->
+                                <img src="data:image/png;base64,{{ data.roi }}" alt="{{ key }} ROI">
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" name="save" class="save-btn btn">Save</button>
+        </form>
+    </div>
+</body>
+</html>

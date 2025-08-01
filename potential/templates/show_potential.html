@@ -1,0 +1,204 @@
+{% load custom_filters %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aggregate Data</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        h1, h2 {
+            color: #0f0;
+        }
+        label, p {
+            color: #fff;
+        }
+        select, button, input {
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #0f0; /*  neon */
+            padding: 10px;
+            margin: 5px 0;
+        }
+        button {
+            color: #fff;
+            border: none;
+        }
+        button.return-btn {
+            background-color: gray;
+            color: #fff;
+        }
+        button.clear-btn {
+            background-color: red;
+        }
+        th, td {
+            border: 1px solid #0f0;
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+</head>
+<body>
+
+    <!-- przycisk powrotu -->
+    <a href="{% url 'index' %}" style="text-decoration: none;">
+        <button class="return-btn btn">Return to Main Page</button>
+    </a>
+
+    <h1>Aggregate Data for {{ player.name }}</h1>
+
+    <!-- przyciski do filtracji czasu -->
+    <form method="GET" action="">
+        <button type="submit" name="days" value="7">Last 7 Days</button>
+        <button type="submit" name="days" value="14">Last 14 Days</button>
+        <button type="submit" name="days" value="30">Last 30 Days</button>
+        <button type="submit" name="days" value="all">All Time</button>
+
+        <label for="start_date">From:</label>
+        <input type="date" name="start_date" value="{{ custom_start }}">
+
+        <label for="end_date">To:</label>
+        <input type="date" name="end_date" value="{{ custom_end }}">
+
+        <button type="submit" name="days" value="custom">Apply</button>
+    </form>
+
+    <!-- tabela z danymi -->
+    {% if all_aggregate_data %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Statistics</th>
+                    {% for category in all_aggregate_data.keys %}
+                        <th>{{ category }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in stats %}
+                <tr>
+                    <td>{{ stat }}</td>
+                    {% for category, category_data in all_aggregate_data.items %}
+                        {% if category_data.aggregated and stat in category_data.aggregated %}
+                            <td> {{ category_data.aggregated|dict_key:stat|default:"0"|smart_round }} </td>
+                        {% else %}
+                            <td>0</td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No data available for the selected time frame.</p>
+    {% endif %}
+
+    <!-- tabela z potencjalami -->
+    <h2>Potential Score by Position</h2>
+    {% if position_potential_scores %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Position</th>
+                    {% for category in all_aggregate_data.keys %}
+                        <th>{{ category }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for position, scores in position_potential_scores.items %}
+                <tr>
+                    <td>{{ position }}</td>
+                    {% for category in all_aggregate_data.keys %}
+                        <td>{{ scores|get_item:category|default:"N/A"|smart_round }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No potential score data available.</p>
+    {% endif %}
+
+    <!-- przycisk do cyszczenia danych -->
+    <form method="POST" action="{% url 'clear_all_data' player.id %}">
+        {% csrf_token %}
+        <button type="submit" class="clear-btn btn">Clear All Data</button>
+    </form>
+
+    <!-- Graphs -->
+    <h2>Graphical Representation</h2>
+    <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+        {% for stat in stats %}
+            <div style="width: 300px; height: 200px; padding: 10px;">
+                <h4 style="text-align: center;">{{ stat|capfirst }}</h4>
+                <canvas id="chart_{{ stat }}"></canvas>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script> /* tu skrypty do wykresów*/
+        document.addEventListener("DOMContentLoaded", function () {
+            const allAggregateData = {{ all_aggregate_data|safe }};
+
+            {% for stat in stats %}
+                let ctx_{{ stat }} = document.getElementById("chart_{{ stat }}").getContext("2d");
+
+                let values_{{ stat }} = [
+                    allAggregateData.training?.aggregated?.["{{ stat }}"] || 0,
+                    allAggregateData.official_game?.aggregated?.["{{ stat }}"] || 0,
+                    allAggregateData.random?.aggregated?.["{{ stat }}"] || 0
+                ];
+
+                let maxValue_{{ stat }} = Math.max(...values_{{ stat }}) * 1.2 || 10;
+
+                new Chart(ctx_{{ stat }}, {
+                    type: "bar",
+                    data: {
+                        labels: ["Training", "Official Game", "Random"],
+                        datasets: [{
+                            label: "{{ stat|capfirst }}",
+                            backgroundColor: ["blue", "green", "orange"],
+                            data: values_{{ stat }}
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: true },
+                            datalabels: {
+                                color: 'black',
+                                anchor: 'end',
+                                align: 'top',
+                                formatter: (value) => value.toFixed(2)
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: maxValue_{{ stat }}
+                            },
+                            x: {
+                                barPercentage: 0.3,
+                                categoryPercentage: 0.5
+                            }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+            {% endfor %}
+        });
+    </script>
+
+</body>
+</html>

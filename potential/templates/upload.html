@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Image</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style> /* tu formatowanie strony */
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        h1, h2, h3 {
+            color: #0f0; /* NEON */
+        }
+        label, p {
+            color: #fff;
+        }
+        select, button, input {
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        button {
+            color: #fff;
+            border: none;
+        }
+        button.return-btn {
+            background-color: gray;
+            color: #fff;
+        }
+        button.upload-btn {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #fff;
+        }
+        button.clear-btn {
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Upload Image for {% if player %}{{ player.name }}{% else %}Unknown Player{% endif %}</h1>
+
+        <!-- powrót do strony głównej -->
+        <div class="text-center mb-3">
+            <a href="{% url 'index' %}" style="text-decoration: none;">
+                <button class="return-btn btn">Return to Main Page</button>
+            </a>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" action="">
+            {% csrf_token %}
+
+            <!-- pole na date -->
+            <div class="form-group row justify-content-center">
+                <label for="{{ form.entry_date.id_for_label }}" class="col-sm-8 col-form-label text-left">Entry Date:</label>
+                <div class="col-sm-8">
+                    {{ form.entry_date }}
+                </div>
+            </div>
+
+            <!-- pole na inne dane -->
+            {% for field in form %}
+                {% if field.name != "entry_date" and field.name != "position" %}
+                    <div class="form-group row justify-content-center">
+                        <label for="{{ field.id_for_label }}" class="col-sm-8 col-form-label text-left">{{ field.label }}</label>
+                        <div class="col-sm-8">
+                            {{ field }}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <!-- dropdown z pozycjami -->
+            <div class="form-group row justify-content-center">
+                <label for="position" class="col-sm-8 col-form-label text-left">Position:</label>
+                <div class="col-sm-8">
+                    <select name="position" id="position" class="form-control">
+                        <option value="">Choose position</option>
+                        <option value="Center_Back">Center Back</option>
+                        <option value="Full_Back">Full Back</option>
+                        <option value="Offensive_Full_Back">Offensive Full Back</option>
+                        <option value="Defensive_Midfielder">Defensive Midfielder</option>
+                        <option value="Midfielder_Allrounder">Midfielder Allrounder</option>
+                        <option value="Offensive_Midfielder">Offensive Midfielder</option>
+                        <option value="Side_Midfielder">Side Midfielder</option>
+                        <option value="Winger">Winger</option>
+                        <option value="Striker">Striker</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- przycisk do uploadu -->
+            <div class="form-group row justify-content-center">
+                <div class="col-sm-8 text-center">
+                    <button type="submit" name="upload" class="upload-btn btn mr-2">upload</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- dane wyciągnięte z obrazka -->
+        {% if processed_data and processed_data.items %}
+            <h2 class="text-center">Processed Data</h2>
+            <ul class="list-unstyled text-center">
+                {% for key, value in processed_data.items %}
+                    <li><strong>{{ key }}:</strong> {{ value }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <!-- potencjał z danych z obrazka -->
+        {% if potential %}
+            <h2 class="text-center">Player Potential</h2>
+            <p class="text-center"><strong>Potential Score:</strong> {{ potential }}</p>
+        {% endif %}
+
+        <!-- agregacja z bazy danych jeżeli są -->
+        {% if all_aggregate_data and all_aggregate_data.items %}
+            <h2 class="text-center">Aggregate Data by Category</h2>
+            {% for category, data in all_aggregate_data.items %}
+                <h3 class="text-center">{{ category|capfirst }} Category</h3>
+                <ul class="list-unstyled text-center">
+                    {% for key, value in data.items %}
+                        {% if key == "last_updated" %}
+                            <li><strong>Last Updated:</strong> {{ value }}</li>
+                        {% else %}
+                            <li><strong>{{ key|capfirst }}:</strong> {{ value }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
